@@ -219,9 +219,9 @@ static NSOperationQueue *delegateQueue;
         NSLog(@"compatible: %@", (compatible) ? @"True" : @"False");
         NSLog(@"available: %@", (update_available) ? @"True" : @"False");
 
-        if (compatible != [NSNumber numberWithBool:YES]) {
+        if ([compatible boolValue] == NO) {
             NSLog(@"Refusing update due to incompatible binary version");
-        } else if(update_available == [NSNumber numberWithBool: YES]) {
+        } else if([update_available boolValue] == YES) {
             NSString *update_uuid = [resp objectForKey:@"snapshot"];
             NSLog(@"update uuid: %@", update_uuid);
 
@@ -234,7 +234,7 @@ static NSOperationQueue *delegateQueue;
             }
         }
 
-        if (update_available == [NSNumber numberWithBool:YES] && compatible == [NSNumber numberWithBool:YES]) {
+        if ([update_available boolValue] == YES && [compatible boolValue] == YES) {
             NSLog(@"update is true");
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
         } else {
@@ -366,7 +366,7 @@ static NSOperationQueue *delegateQueue;
         [formattedUUID insertString: @"-" atIndex: 18];
         [formattedUUID insertString: @"-" atIndex: 23];
         NSString *baseUrl = self.deploy_server;
-        NSString *endpoint = [NSString stringWithFormat:@"/deploy/snapshots/%@?app_id=%@", formattedUUID.lowercaseString, self.appId];
+        NSString *endpoint = [NSString stringWithFormat:@"/mobile/snapshot/%@", formattedUUID.lowercaseString];
         NSString *url = [NSString stringWithFormat:@"%@%@", baseUrl, endpoint];
         NSDictionary* headers = @{@"Content-Type": @"application/json", @"accept": @"application/json"};
         NSError *httpError = nil;
@@ -505,7 +505,7 @@ static NSOperationQueue *delegateQueue;
 
 - (struct JsonHttpResponse) postDeviceDetails {
     NSString *baseUrl = self.deploy_server;
-    NSString *endpoint = [NSString stringWithFormat:@"/deploy/channels/%@/check-device/", self.channel_tag];
+    NSString *endpoint = @"/mobile/check";
     NSString *url = [NSString stringWithFormat:@"%@%@", baseUrl, endpoint];
     NSDictionary* headers = @{@"Content-Type": @"application/json", @"accept": @"application/json"};
     NSString *uuid = [[NSUserDefaults standardUserDefaults] objectForKey:@"uuid"];

@@ -278,7 +278,7 @@ public class IonicDeploy extends CordovaPlugin {
 
   private JSONObject getMetadata(CallbackContext callbackContext, final String uuid) {
     String strictuuid = uuid.replaceAll("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5");
-    String endpoint = "/deploy/snapshots/" + strictuuid + "?app_id=" + this.app_id;
+    String endpoint = "/mobile/snapshot/" + strictuuid;
     JsonHttpResponse response = new JsonHttpResponse();
     JSONObject json = new JSONObject();
     HttpURLConnection urlConnection = null;
@@ -558,7 +558,7 @@ public class IonicDeploy extends CordovaPlugin {
   }
 
   private JsonHttpResponse postDeviceDetails(String uuid, final String channel_tag) {
-    String endpoint = "/deploy/channels/" + channel_tag + "/check-device";
+    String endpoint = "/mobile/check";
     JsonHttpResponse response = new JsonHttpResponse();
     JSONObject json = new JSONObject();
     JSONObject device_details = new JSONObject();

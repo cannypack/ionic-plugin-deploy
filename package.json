@@ -1,6 +1,6 @@
 {
   "name": "ionic-plugin-deploy",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "Ionic Deploy Plugin",
   "cordova": {
     "id": "ionic-plugin-deploy",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ionic-team/ionic-plugin-deploy.git"
+    "url": "git+https://git.cannypack.com/scm/os/ionic-plugin-deploy.git"
   },
   "keywords": [
     "Ionic",
