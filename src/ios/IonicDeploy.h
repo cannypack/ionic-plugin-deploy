@@ -12,7 +12,7 @@
 
 - (NSArray *) deconstructVersionLabel: (NSString *) label;
 
-- (struct JsonHttpResponse) postDeviceDetails;
+- (struct JsonHttpResponse) postDeviceDetails: (NSMutableDictionary *) customHeaders checkOptions:(NSDictionary *) checkOptions;
 
 - (void) updateVersionLabel:(NSString *)uuid;
 

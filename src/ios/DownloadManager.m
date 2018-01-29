@@ -58,9 +58,9 @@
     return self;
 }
 
-- (void)addDownloadWithFilename:(NSString *)filename URL:(NSURL *)url
+- (void)addDownloadWithFilename:(NSString *)filename URL:(NSURL *)url headers:(NSDictionary *)headers
 {
-    Download *download = [[Download alloc] initWithFilename:filename URL:url delegate:self];
+    Download *download = [[Download alloc] initWithFilename:filename URL:url headers:headers delegate:self];
     
     [self.downloads addObject:download];
     

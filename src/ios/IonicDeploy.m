@@ -21,8 +21,6 @@ typedef struct JsonHttpResponse {
 
 @property int progress;
 @property NSString *callbackId;
-@property NSString *appId;
-@property NSString *channel_tag;
 @property NSDictionary *last_update;
 @property Boolean ignore_deploy;
 @property NSString *version_label;
@@ -151,20 +149,15 @@ static NSOperationQueue *delegateQueue;
 }
 
 - (void) initialize:(CDVInvokedUrlCommand *)command {
-    self.deploy_server = [command.arguments objectAtIndex:1];
+    self.deploy_server = [command.arguments objectAtIndex:0];
 }
 
 - (void) check:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
-    self.channel_tag = [command.arguments objectAtIndex:1];
-
-    if([self.appId isEqual: @"YOUR_APP_ID"]) {
-        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Please set your app id in app.js for YOUR_APP_ID before using $ionicDeploy"] callbackId:command.callbackId];
-        return;
-    }
+    NSMutableDictionary *customHeaders = [command.arguments objectAtIndex:0];
+    NSDictionary *checkOptions = [command.arguments objectAtIndex:1];
 
     dispatch_async(self.serialQueue, ^{
-        JsonHttpResponse result = [self postDeviceDetails];
+        JsonHttpResponse result = [self postDeviceDetails:customHeaders checkOptions:checkOptions];
 
         NSLog(@"Response: %@", result.message);
 
@@ -173,14 +166,8 @@ static NSOperationQueue *delegateQueue;
 }
 
 - (void) parseUpdate:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
     NSString *jsonString = [command.arguments objectAtIndex:1];
     NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-
-    if([self.appId isEqual: @"YOUR_APP_ID"]) {
-        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Please set your app id in app.js for YOUR_APP_ID before using $ionicDeploy"] callbackId:command.callbackId];
-        return;
-    }
 
     dispatch_async(self.serialQueue, ^{
         JsonHttpResponse result;
@@ -250,7 +237,7 @@ static NSOperationQueue *delegateQueue;
 }
 
 - (void) download:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
+    NSDictionary *customHeaders = [command.arguments objectAtIndex:0];
 
     dispatch_async(self.serialQueue, ^{
         // Save this to a property so we can have the download progress delegate thing send
@@ -283,14 +270,12 @@ static NSOperationQueue *delegateQueue;
             NSString *filePath = [NSString stringWithFormat:@"%@/%@", libraryDirectory,@"www.zip"];
 
             NSLog(@"Queueing Download...");
-            [self.downloadManager addDownloadWithFilename:filePath URL:url];
+            [self.downloadManager addDownloadWithFilename:filePath URL:url headers:customHeaders];
         }
     });
 }
 
 - (void) extract:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
-
     dispatch_async(self.serialQueue, ^{
         self.callbackId = command.callbackId;
         self.ignore_deploy = false;
@@ -323,8 +308,6 @@ static NSOperationQueue *delegateQueue;
 }
 
 - (void) redirect:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
-
     CDVPluginResult* pluginResult = nil;
 
     [self doRedirect];
@@ -348,7 +331,6 @@ static NSOperationQueue *delegateQueue;
 }
 
 - (void) getMetadata:(CDVInvokedUrlCommand *)command {
-    self.appId = [command.arguments objectAtIndex:0];
     CDVPluginResult *pluginResult = nil;
     NSString *uuid = [command.arguments objectAtIndex:1];
 
@@ -503,13 +485,15 @@ static NSOperationQueue *delegateQueue;
     }
 }
 
-- (struct JsonHttpResponse) postDeviceDetails {
+- (struct JsonHttpResponse) postDeviceDetails:(NSMutableDictionary *) customHeaders checkOptions:(NSDictionary *) checkOptions {
     NSString *baseUrl = self.deploy_server;
     NSString *endpoint = @"/mobile/check";
     NSString *url = [NSString stringWithFormat:@"%@%@", baseUrl, endpoint];
-    NSDictionary* headers = @{@"Content-Type": @"application/json", @"accept": @"application/json"};
     NSString *uuid = [[NSUserDefaults standardUserDefaults] objectForKey:@"uuid"];
     NSString *app_version = [[self deconstructVersionLabel:self.version_label] firstObject];
+
+    [customHeaders setObject:@"application/json" forKey:@"Content-Type"];
+    [customHeaders setObject:@"application/json" forKey:@"accept"];
 
     NSMutableDictionary *deviceDict = [NSMutableDictionary
                                        dictionaryWithDictionary:@{
@@ -523,19 +507,17 @@ static NSOperationQueue *delegateQueue;
 
     NSDictionary *parameters = @{
                                  @"device": deviceDict,
-                                 @"app_id": self.appId,
-                                 @"channel_tag": self.channel_tag
+                                 @"options": checkOptions
                                  };
 
     UNIHTTPJsonResponse *result = [[UNIRest postEntity:^(UNIBodyRequest *request) {
         [request setUrl:url];
-        [request setHeaders:headers];
+        [request setHeaders:customHeaders];
         [request setBody:[NSJSONSerialization dataWithJSONObject:parameters options:0 error:nil]];
     }] asJson];
 
     NSLog(@"version is: %@", app_version);
     NSLog(@"uuid is: %@", uuid);
-    NSLog(@"channel is: %@", self.channel_tag);
 
     JsonHttpResponse response;
     NSError *jsonError = nil;

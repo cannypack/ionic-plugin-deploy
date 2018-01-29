@@ -85,19 +85,27 @@
 
 /// @name Properties
 
-/** The local filename of the file being downloaded. Generally not set manually, but rather by call to `initWithFilename:URL:delegate:`.
+/** The local filename of the file being downloaded. Generally not set manually, but rather by call to `initWithHeaders:URL:headers:delegate:`.
  *
- * @see initWithFilename:URL:delegate:
+ * @see initWithHeaders:URL:headers:delegate:
  */
 
 @property (nonatomic, copy) NSString *filename;
 
-/** The remote URL of the file being downloaded. Generally not set manually, but rather by call to `initWithFilename:URL:delegate:`.
+/** The remote URL of the file being downloaded. Generally not set manually, but rather by call to `initWithHeaders:URL:headers:delegate:`.
  *
- * @see initWithFilename:URL:delegate:
+ * @see initWithHeaders:URL:headers:delegate:
  */
 
 @property (nonatomic, copy) NSURL *url;
+
+/** The request headers which will be set when requesting download. Generally not set manually,
+ * but rather by call to `initWithHeaders:URL:headers:delegate:`.
+ *
+ * @see initWithHeaders:URL:headers:delegate:
+ */
+
+@property (nonatomic, copy) NSDictionary *headers;
 
 /** The delegate object that conforms to `DownloadDelegate`, if any.
  *
@@ -140,13 +148,17 @@
  *
  * The remote URL of the file being downloaded. 
  *
+ * @param headers
+ *
+ * The headers which will be set when requesting download.
+ *
  * @param delegate
  *
  * The delegate object to be notified of the status of the download. Must conform to `DownloadDelegate` protocol. This is optional.
  *
  */
 
-- (id)initWithFilename:(NSString *)filename URL:(NSURL *)url delegate:(id<DownloadDelegate>)delegate;
+- (id)initWithFilename:(NSString *)filename URL:(NSURL *)url headers:(NSDictionary *)headers delegate:(id<DownloadDelegate>)delegate;
 
 /// @name Control
 

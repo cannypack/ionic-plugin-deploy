@@ -1,86 +1,87 @@
 var IonicDeploy = {
-  init: function(app_id, server_host, success, failure) {
+  init: function(server_host, success, failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'initialize',
-      [app_id, server_host]
+      [server_host]
     );
   },
-  check: function(app_id, channel_tag, success, failure) {
+  check: function(customHeaders, checkOptions, success, failure) {
+    var opts = checkOptions || {};
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'check',
-      [app_id, channel_tag]
+      [customHeaders, opts]
     );
   },
-  download: function(app_id, success, failure) {
+  download: function(customHeaders, success, failure) {
   	cordova.exec(
   		success,
   		failure,
   		'IonicDeploy',
   		'download',
-  		[app_id]
+  		[customHeaders]
   	);
   },
-  extract: function(app_id, success,failure) {
+  extract: function(success,failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'extract',
-      [app_id]
+      []
     );
   },
-  redirect: function(app_id, success, failure) {
+  redirect: function(success, failure) {
   	cordova.exec(
   		success,
   		failure,
   		'IonicDeploy',
   		'redirect',
-  		[app_id]
+  		[]
   	);
   },
-  info: function(app_id, success, failure) {
+  info: function(success, failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'info',
-      [app_id]
+      []
     );
   },
-  getVersions: function(app_id, success, failure) {
+  getVersions: function(success, failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'getVersions',
-      [app_id]
+      []
     );
   },
-  deleteVersion: function(app_id, version, success, failure) {
+  deleteVersion: function(version, success, failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'deleteVersion',
-      [app_id, version]
+      [version]
     );
   },
-  getMetadata: function(app_id, uuid, success, failure) {
+  getMetadata: function(uuid, success, failure) {
     cordova.exec(
       success,
       failure,
       'IonicDeploy',
       'getMetadata',
-      [app_id, uuid]
+      [uuid]
     );
   },
-  parseUpdate: function(app_id, jsonResponse, success, failure) {
+  parseUpdate: function(jsonResponse, success, failure) {
     if (typeof jsonReponse !== 'string') {
       jsonResponse = JSON.stringify(jsonResponse);
     }
@@ -89,7 +90,7 @@ var IonicDeploy = {
       failure,
       'IonicDeploy',
       'parseUpdate',
-      [app_id, jsonResponse]
+      [jsonResponse]
     );
   },
 }

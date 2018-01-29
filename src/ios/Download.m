@@ -36,7 +36,7 @@
 
 #pragma mark - Public methods
 
-- (instancetype)initWithFilename:(NSString *)filename URL:(NSURL *)url delegate:(id<DownloadDelegate>)delegate
+- (instancetype)initWithFilename:(NSString *)filename URL:(NSURL *)url headers:(NSDictionary *)headers delegate:(id<DownloadDelegate>)delegate
 {
     self = [super init];
     
@@ -44,6 +44,9 @@
         _filename = [filename copy];
         _url = [url copy];
         _delegate = delegate;
+        if (headers != nil) {
+            _headers = [headers copy];
+        }
     }
     
     return self;
@@ -71,7 +74,7 @@
     }
     [self.downloadStream open];
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:self.url];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:self.url];
     if (!request) {
         self.error = [NSError errorWithDomain:[NSBundle mainBundle].bundleIdentifier
                                          code:-1
@@ -81,6 +84,13 @@
         return;
     }
     
+    // Add headers to the request
+    if (self.headers != nil) {
+        for (NSString *key in self.headers) {
+            [request addValue:[self.headers objectForKey:key] forHTTPHeaderField:key];
+        }
+    }
+
     self.connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
     [self.connection scheduleInRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
     [self.connection start];

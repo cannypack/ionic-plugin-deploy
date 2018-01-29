@@ -53,9 +53,8 @@ class JsonHttpResponse {
 }
 
 public class IonicDeploy extends CordovaPlugin {
-  String server = "https://api.ionic.io";
+  String server;
   Context myContext = null;
-  String app_id = null;
   boolean debug = true;
   SharedPreferences prefs = null;
   CordovaWebView v = null;
@@ -184,30 +183,31 @@ public class IonicDeploy extends CordovaPlugin {
    */
   public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
-    this.app_id = args.getString(0);
     this.prefs = getPreferences();
 
-    initApp(args.getString(0));
+    initApp();
 
     final SharedPreferences prefs = this.prefs;
 
     if (action.equals("initialize")) {
-      this.server = args.getString(1);
+      this.server = args.getString(0);
       return true;
     } else if (action.equals("check")) {
       logMessage("CHECK", "Checking for updates");
-      final String channel_tag = args.getString(1);
+      final JSONObject customHeaders = args.getJSONObject(0);
+      final JSONObject checkOptions = args.getJSONObject(1);
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
-          checkForUpdates(callbackContext, channel_tag);
+          checkForUpdates(callbackContext, customHeaders, checkOptions);
         }
       });
       return true;
     } else if (action.equals("download")) {
       logMessage("DOWNLOAD", "Downloading updates");
+      final JSONObject customHeaders = args.getJSONObject(0);
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
-          downloadUpdate(callbackContext);
+          downloadUpdate(callbackContext, customHeaders);
         }
       });
       return true;
@@ -231,7 +231,7 @@ public class IonicDeploy extends CordovaPlugin {
       callbackContext.success(this.getDeployVersions());
       return true;
     } else if (action.equals("deleteVersion")) {
-      final String uuid = args.getString(1);
+      final String uuid = args.getString(0);
       boolean status = this.removeVersion(uuid);
       if (status) {
         callbackContext.success();
@@ -242,7 +242,7 @@ public class IonicDeploy extends CordovaPlugin {
     } else if (action.equals("getMetadata")) {
       String uuid = null;
       try {
-        uuid = args.getString(1);
+        uuid = args.getString(0);
       } catch (JSONException e) {
         uuid = this.prefs.getString("upstream_uuid", "");
       }
@@ -264,7 +264,7 @@ public class IonicDeploy extends CordovaPlugin {
       return true;
     } else if (action.equals("parseUpdate")) {
       logMessage("PARSEUPDATE", "Checking response for updates");
-      final String response = args.getString(1);
+      final String response = args.getString(0);
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
           parseUpdate(callbackContext, response);
@@ -329,20 +329,18 @@ public class IonicDeploy extends CordovaPlugin {
     callbackContext.success(json);
   }
 
-  private void initApp(String app_id) {
-    this.app_id = app_id;
+  private void initApp() {
     SharedPreferences prefs = this.prefs;
 
-    prefs.edit().putString("app_id", this.app_id).apply();
     // Used for keeping track of the order versions were downloaded
     int version_count = prefs.getInt("version_count", 0);
     prefs.edit().putInt("version_count", version_count).apply();
   }
 
-  private void checkForUpdates(CallbackContext callbackContext, final String channel_tag) {
+  private void checkForUpdates(CallbackContext callbackContext, final JSONObject customHeaders, final JSONObject checkOptions) {
 
     String deployed_version = this.prefs.getString("uuid", "");
-    JsonHttpResponse response = postDeviceDetails(deployed_version, channel_tag);
+    JsonHttpResponse response = postDeviceDetails(deployed_version, customHeaders, checkOptions);
 
     this.parseUpdate(callbackContext, response);
   }
@@ -402,7 +400,7 @@ public class IonicDeploy extends CordovaPlugin {
     }
   }
 
-  private void downloadUpdate(CallbackContext callbackContext) {
+  private void downloadUpdate(CallbackContext callbackContext, final JSONObject customHeaders) {
     String upstream_uuid = this.prefs.getString("upstream_uuid", "");
     if (upstream_uuid != "" && this.hasVersion(upstream_uuid)) {
       // Set the current version to the upstream uuid
@@ -412,7 +410,7 @@ public class IonicDeploy extends CordovaPlugin {
       try {
           String url = this.last_update.getString("url");
           final DownloadTask downloadTask = new DownloadTask(this.myContext, callbackContext);
-          downloadTask.execute(url);
+          downloadTask.execute(customHeaders, url);
       } catch (JSONException e) {
         logMessage("DOWNLOAD", e.toString());
         callbackContext.error("Error fetching download");
@@ -557,7 +555,7 @@ public class IonicDeploy extends CordovaPlugin {
     return false;
   }
 
-  private JsonHttpResponse postDeviceDetails(String uuid, final String channel_tag) {
+  private JsonHttpResponse postDeviceDetails(String uuid, final JSONObject customHeaders, final JSONObject checkOptions) {
     String endpoint = "/mobile/check";
     JsonHttpResponse response = new JsonHttpResponse();
     JSONObject json = new JSONObject();
@@ -569,9 +567,8 @@ public class IonicDeploy extends CordovaPlugin {
         device_details.put("snapshot", uuid);
       }
       device_details.put("platform", "android");
-      json.put("channel_tag", channel_tag);
-      json.put("app_id", this.app_id);
       json.put("device", device_details);
+      json.put("options", checkOptions);
 
       String params = json.toString();
       byte[] postData = params.getBytes("UTF-8");
@@ -583,6 +580,17 @@ public class IonicDeploy extends CordovaPlugin {
 
       conn.setDoOutput(true);
       conn.setRequestMethod("POST");
+
+      // Add custom headers first
+      for (Iterator<String> it = customHeaders.keys(); it.hasNext();) {
+        String key = it.next();
+        try {
+          String value = customHeaders.getString(key);
+          conn.setRequestProperty(key, value);
+        } catch (JSONException e) {}
+      }
+
+      // Set headers
       conn.setRequestProperty("Content-Type", "application/json");
       conn.setRequestProperty("Accept", "application/json");
       conn.setRequestProperty("Charset", "utf-8");
@@ -846,10 +854,12 @@ public class IonicDeploy extends CordovaPlugin {
   }
 
   private class DownloadTask extends AsyncTask<String, Integer, String> {
+    private JSONObject customHeaders;
     private Context myContext;
     private CallbackContext callbackContext;
 
-    public DownloadTask(Context context, CallbackContext callbackContext) {
+    public DownloadTask(final JSONObject customHeaders, Context context, CallbackContext callbackContext) {
+      this.customHeaders = customHeaders;
       this.myContext = context;
       this.callbackContext = callbackContext;
     }
@@ -863,6 +873,17 @@ public class IonicDeploy extends CordovaPlugin {
         URL url = new URL(sUrl[0]);
         HttpURLConnection.setFollowRedirects(true);
         connection = (HttpURLConnection) url.openConnection();
+
+        // Add custom headers first
+        for (Iterator<String> it = this.customHeaders.keys(); it.hasNext();) {
+          String key = it.next();
+          try {
+            String value = this.customHeaders.getString(key);
+            connection.setRequestProperty(key, value);
+          } catch (JSONException e) {}
+        }
+
+        // Init connection
         connection.connect();
 
         // expect HTTP 200 OK, so we don't mistakenly save error report

@@ -153,11 +153,15 @@
  *
  * The remote URL of the source from where the file should be copied.
  *
+ * @param headers
+ *
+ * The request headers which will be set when requesting download.
+ *
  * @see filename
  * @see url
  */
 
-- (void)addDownloadWithFilename:(NSString *)filename URL:(NSURL *)url;
+- (void)addDownloadWithFilename:(NSString *)filename URL:(NSURL *)url headers:(NSDictionary *)headers;
 
 /// Cancel all downloads in progress or pending.
 
