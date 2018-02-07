@@ -212,7 +212,7 @@ static NSOperationQueue *delegateQueue;
             NSString *update_uuid = [resp objectForKey:@"snapshot"];
             NSLog(@"update uuid: %@", update_uuid);
 
-            if(![update_uuid isEqual:ignore_version] && ![update_uuid isEqual:our_version]) {
+            if(update_uuid && ![update_uuid isKindOfClass:[NSNull class]] && ![update_uuid isEqual:ignore_version] && ![update_uuid isEqual:our_version]) {
                 [prefs setObject: update_uuid forKey: @"upstream_uuid"];
                 [prefs synchronize];
                 self.last_update = resp;
@@ -334,11 +334,11 @@ static NSOperationQueue *delegateQueue;
     CDVPluginResult *pluginResult = nil;
     NSString *uuid = [command.arguments objectAtIndex:1];
 
-    if (uuid == nil || uuid == [NSNull null] || [uuid isEqualToString:@""] || [uuid isEqualToString:@"null"]) {
+    if (!uuid || [uuid isKindOfClass:[NSNull class]] || [uuid isEqualToString:@""] || [uuid isEqualToString:@"null"]) {
         uuid = [[NSUserDefaults standardUserDefaults] objectForKey:@"upstream_uuid"];
     }
 
-    if (uuid == nil || uuid == [NSNull null] || [uuid isEqualToString:@""] || [uuid isEqualToString:@"null"]) {
+    if (!uuid || [uuid isKindOfClass:[NSNull class]] || [uuid isEqualToString:@""] || [uuid isEqualToString:@"null"]) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"NO_DEPLOY_UUID_AVAILABLE"];
     } else {
         NSString *strippedUUID = [uuid stringByReplacingOccurrencesOfString:@"-" withString:@""];

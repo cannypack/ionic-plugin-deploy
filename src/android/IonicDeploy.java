@@ -373,7 +373,7 @@ public class IonicDeploy extends CordovaPlugin {
         } else if(updatesAvailable) {
           try {
             String update_uuid = update.getString("snapshot");
-            if(!update_uuid.equals(ignore_version) && !update_uuid.equals(loaded_version)) {
+            if(!update_uuid.equals("null") && !update_uuid.equals(ignore_version) && !update_uuid.equals(loaded_version)) {
               prefs.edit().putString("upstream_uuid", update_uuid).apply();
               this.last_update = update;
             } else {
